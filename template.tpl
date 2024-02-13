@@ -11,7 +11,7 @@ ___INFO___
 {
   "type": "TAG",
   "id": "cvt_temp_public_id",
-  "version": 2,
+  "version": 1,
   "securityGroups": [],
   "displayName": "CookiePlus CMP",
   "brand": {
@@ -39,9 +39,136 @@ ___TEMPLATE_PARAMETERS___
           "type": "TEXT",
           "name": "region",
           "displayName": "Region",
-          "simpleValueType": true
+          "simpleValueType": true,
+          "help": "(leave blank to have consent apply to all regions)"
         },
         "isUnique": true
+      },
+      {
+        "param": {
+          "type": "SELECT",
+          "name": "analytics_storage",
+          "displayName": "Analytics",
+          "macrosInSelect": false,
+          "selectItems": [
+            {
+              "value": "granted",
+              "displayValue": "granted"
+            },
+            {
+              "value": "denied",
+              "displayValue": "denied"
+            }
+          ],
+          "simpleValueType": true,
+          "defaultValue": "denied"
+        },
+        "isUnique": false
+      },
+      {
+        "param": {
+          "type": "SELECT",
+          "name": "ad_storage",
+          "displayName": "Marketing (ad_storage)",
+          "macrosInSelect": false,
+          "selectItems": [
+            {
+              "value": "granted",
+              "displayValue": "granted"
+            },
+            {
+              "value": "denied",
+              "displayValue": "denied"
+            }
+          ],
+          "simpleValueType": true,
+          "defaultValue": "denied"
+        },
+        "isUnique": false
+      },
+      {
+        "param": {
+          "type": "SELECT",
+          "name": "ad_user_data",
+          "displayName": "Marketing (ad_user_data)",
+          "macrosInSelect": false,
+          "selectItems": [
+            {
+              "value": "granted",
+              "displayValue": "granted"
+            },
+            {
+              "value": "denied",
+              "displayValue": "denied"
+            }
+          ],
+          "simpleValueType": true,
+          "defaultValue": "denied"
+        },
+        "isUnique": false
+      },
+      {
+        "param": {
+          "type": "SELECT",
+          "name": "ad_personalization",
+          "displayName": "Marketing (ad_personalization)",
+          "macrosInSelect": false,
+          "selectItems": [
+            {
+              "value": "granted",
+              "displayValue": "granted"
+            },
+            {
+              "value": "denied",
+              "displayValue": "denied"
+            }
+          ],
+          "simpleValueType": true,
+          "defaultValue": "denied"
+        },
+        "isUnique": false
+      },
+      {
+        "param": {
+          "type": "SELECT",
+          "name": "functionality_storage",
+          "displayName": "Functionality",
+          "macrosInSelect": false,
+          "selectItems": [
+            {
+              "value": "granted",
+              "displayValue": "granted"
+            },
+            {
+              "value": "denied",
+              "displayValue": "denied"
+            }
+          ],
+          "simpleValueType": true,
+          "defaultValue": "denied"
+        },
+        "isUnique": false
+      },
+      {
+        "param": {
+          "type": "SELECT",
+          "name": "personalization_storage",
+          "displayName": "Personalization",
+          "macrosInSelect": false,
+          "selectItems": [
+            {
+              "value": "granted",
+              "displayValue": "granted"
+            },
+            {
+              "value": "denied",
+              "displayValue": "denied"
+            }
+          ],
+          "simpleValueType": true,
+          "defaultValue": "denied"
+        },
+        "isUnique": false
       }
     ]
   },
@@ -54,21 +181,24 @@ ___TEMPLATE_PARAMETERS___
     "defaultValue": 500
   },
   {
-    "type": "SELECT",
-    "name": "analytics_storage",
-    "displayName": "",
-    "macrosInSelect": false,
-    "selectItems": [
+    "type": "GROUP",
+    "name": "Optional",
+    "displayName": "Optional",
+    "groupStyle": "NO_ZIPPY",
+    "subParams": [
       {
-        "value": "granted",
-        "displayValue": "granted"
+        "type": "CHECKBOX",
+        "name": "url_passthrough",
+        "checkboxText": "Pass through URL parameters",
+        "simpleValueType": true
       },
       {
-        "value": "denied",
-        "displayValue": "denied"
+        "type": "CHECKBOX",
+        "name": "ads_data_redaction",
+        "checkboxText": "Redact Ads Data",
+        "simpleValueType": true
       }
-    ],
-    "simpleValueType": true
+    ]
   }
 ]
 
@@ -84,11 +214,20 @@ const cookies = getCookieValues('ckplus');
 const log = require('logToConsole');
 const queryPermission = require('queryPermission');
 const localStorage = require('localStorage');
+
+
+
 let storage = '';
 const key = 'ckplus';
 if (queryPermission('access_local_storage', 'read', key)) {
   storage = localStorage.getItem(key);
 }
+
+const stringToArray = (str) => { 
+  const stringList = str.split(","); 
+  return stringList;
+};
+
 
 const onUserConsent = (consents) => {
   let consent = consents.split(',');
@@ -133,17 +272,16 @@ const main = (isWebview) => {
           onUserConsent(localStore);
         }else{
               const settingObject = {
-                 ad_storage: data.ad_storage,
-                 ad_user_data: data.ad_user_data,
-                 ad_personalization: data.ad_personalization,
-                 analytics_storage: data.analytics_storage,
-                 functionality_storage: data.functionality_storage,
-                 personalization_storage: data.personalization_storage, 
+                 ad_storage: data.defaultSettings && data.defaultSettings[0].ad_storage || 'denied',
+                 ad_user_data: data.defaultSettings && data.defaultSettings[0].ad_user_data || 'denied',
+                 ad_personalization: data.defaultSettings && data.defaultSettings[0].ad_personalization || 'denied',
+                 analytics_storage: data.defaultSettings && data.defaultSettings[0].analytics_storage || 'denied',
+                 functionality_storage: data.defaultSettings && data.defaultSettings[0].functionality_storage || 'denied',
+                 personalization_storage:data.defaultSettings && data.defaultSettings[0].personalization_storage || 'denied', 
                  security_storage: 'granted',
                  wait_for_update: data.wait_for_update
               };
           
-              // setDefaultConsentState(settingObject);
               updateConsentState(settingObject);
         }
   }else{
@@ -152,7 +290,6 @@ const main = (isWebview) => {
         if (settings) {
           onUserConsent(settings);
         }else{
-          log(data.wait_for_update);
            const settingObject = {
                  ad_storage: 'denied',
                  ad_user_data: 'denied',
@@ -164,17 +301,16 @@ const main = (isWebview) => {
                  wait_for_update: data.wait_for_update
               };
           
-              // setDefaultConsentState(settingObject);
               updateConsentState(settingObject);
         }
     }else{
-       const settingObject = {
-                 ad_storage: data.ad_storage,
-                 ad_user_data: data.ad_user_data,
-                 ad_personalization: data.ad_personalization,
-                 analytics_storage: data.analytics_storage,
-                 functionality_storage: data.functionality_storage,
-                 personalization_storage: data.personalization_storage, 
+        const settingObject = {
+                 ad_storage: data.defaultSettings && data.defaultSettings[0].ad_storage || 'denied',
+                 ad_user_data: data.defaultSettings && data.defaultSettings[0].ad_user_data || 'denied',
+                 ad_personalization: data.defaultSettings && data.defaultSettings[0].ad_personalization || 'denied',
+                 analytics_storage: data.defaultSettings && data.defaultSettings[0].analytics_storage || 'denied',
+                 functionality_storage: data.defaultSettings && data.defaultSettings[0].functionality_storage || 'denied',
+                 personalization_storage:data.defaultSettings && data.defaultSettings[0].personalization_storage || 'denied', 
                  security_storage: 'granted',
                  wait_for_update: data.wait_for_update
               };
@@ -190,18 +326,26 @@ let checked = cookies;
    if(storage !== ''){ 
      main(true);
    }else{
-     log('checked default : ',data);
-     const settingObject = {
-                 ad_storage: data.defaultSettings[0].ad_storage,
-                 ad_user_data: data.defaultSettings[0].ad_user_data,
-                 ad_personalization: data.defaultSettings[0].ad_personalization,
-                 analytics_storage: data.defaultSettings[0].analytics_storage,
-                 functionality_storage: data.defaultSettings[0].functionality_storage,
-                 personalization_storage: data.defaultSettings[0].personalization_storage, 
+     if(data.defaultSettings && data.defaultSettings.length > 0 ){
+       for(let i=0; i<data.defaultSettings.length; i++){
+         
+          var settingObject = {
+                 ad_storage: data.defaultSettings[i].ad_storage,
+                 ad_user_data: data.defaultSettings[i].ad_user_data,
+                 ad_personalization: data.defaultSettings[i].ad_personalization ,
+                 analytics_storage: data.defaultSettings[i].analytics_storage,
+                 functionality_storage: data.defaultSettings[i].functionality_storage,
+                 personalization_storage: data.defaultSettings[i].personalization_storage, 
                  security_storage: 'granted',
                  wait_for_update: data.wait_for_update
               }; 
-              setDefaultConsentState(settingObject);
+              if(data.defaultSettings[i].region){
+                 settingObject.region = data.defaultSettings[i].region;
+              }
+       }
+       setDefaultConsentState(settingObject);
+     }
+     
    }
  }
 
@@ -470,68 +614,6 @@ ___WEB_PERMISSIONS___
                     "boolean": true
                   }
                 ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "consentType"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "defaultSettings"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "consentType"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "region"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  }
-                ]
               }
             ]
           }
@@ -611,45 +693,6 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "region"
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": true
-                  },
-                  {
-                    "type": 8,
-                    "boolean": false
-                  }
-                ]
-              },
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "key"
-                  },
-                  {
-                    "type": 1,
-                    "string": "read"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  },
-                  {
-                    "type": 1,
-                    "string": "execute"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
                     "string": "defaultSettings"
                   },
                   {
@@ -684,9 +727,6 @@ ___WEB_PERMISSIONS___
       },
       "param": []
     },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
     "isRequired": true
   },
   {
@@ -704,9 +744,6 @@ ___WEB_PERMISSIONS___
           }
         }
       ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
     },
     "isRequired": true
   }
