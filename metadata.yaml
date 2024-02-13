@@ -1,6 +1,10 @@
 homepage: "https://www.cookieplus.com"
-documentation: "https://support.cookieplus.com"
+documentation: "https://help.cookieplus.com"
 versions:
+  - sha: 0bca92fce61aa19b3e49d20fbb09869aa1810b78
+    changeNotes: Update template.tpl
+  - sha: 187c739d9b209bfe51b76d449aa424bfa55255fc
+    changeNotes: Update metadata.yaml
   - sha: 5f4eadc606d505cbe3520c48a1c6e00edda0d6ad
     changeNotes: Update README.md
   - sha: ed8ec2965b9bfa755ecd13a4c636e6b9798b3292

@@ -14,6 +14,7 @@ ___INFO___
   "version": 1,
   "securityGroups": [],
   "displayName": "CookiePlus CMP",
+  "categories":["ANALYTICS", "CONVERSIONS", "ADVERTISING"],
   "brand": {
     "id": "brand_dummy",
     "displayName": "",
