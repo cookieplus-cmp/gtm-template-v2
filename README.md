@@ -10,6 +10,7 @@ This GTM template makes it simple to integrate Consent Mode with CookiePlus. It 
 * **Easy Installation:** Simplifies the Consent Mode integration process of CookiePlus into your website.
 * **Consent Management:** Allows capturing and managing users' consent for various types of cookies.
 * **PDPA Compliance:** Helps in making your website PDPA compliant.
+* **Support Google Consent Mode v2**
 
 ### Prerequisites
 
