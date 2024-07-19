@@ -174,19 +174,27 @@ ___TEMPLATE_PARAMETERS___
     ]
   },
   {
-    "type": "TEXT",
-    "name": "wait_for_update",
-    "displayName": "Wait for update",
-    "simpleValueType": true,
-    "valueUnit": "milliseconds",
-    "defaultValue": 500
-  },
-  {
     "type": "GROUP",
     "name": "Optional",
     "displayName": "Optional",
     "groupStyle": "NO_ZIPPY",
     "subParams": [
+      {
+        "type": "TEXT",
+        "name": "wait_for_update",
+        "displayName": "Wait for update",
+        "simpleValueType": true,
+        "valueUnit": "milliseconds",
+        "defaultValue": 2000,
+        "valueValidators": [
+          {
+            "type": "NON_NEGATIVE_NUMBER"
+          },
+          {
+            "type": "NON_EMPTY"
+          }
+        ]
+      },
       {
         "type": "CHECKBOX",
         "name": "url_passthrough",
@@ -215,8 +223,7 @@ const cookies = getCookieValues('ckplus');
 const log = require('logToConsole');
 const queryPermission = require('queryPermission');
 const localStorage = require('localStorage');
-
-
+const gtagSet = require('gtagSet');
 
 let storage = '';
 const key = 'ckplus';
@@ -228,14 +235,42 @@ const stringToArray = (str) => {
   const stringList = str.split(","); 
   return stringList;
 };
+const getRegionArr = (regionStr) => {
+  return regionStr.split(',')
+    .map(region => region.trim())
+    .filter(region => region.length !== 0);
+};
 
-
+const initDefault = (consentDefault) => {
+  if(consentDefault && consentDefault.defaultSettings  && consentDefault.defaultSettings.length > 0){
+    
+  for(let i=0; i<consentDefault.defaultSettings.length; i++){
+    var settingObject = {
+      ad_storage: consentDefault.defaultSettings[i].ad_storage,
+      ad_user_data: consentDefault.defaultSettings[i].ad_user_data,
+      ad_personalization: consentDefault.defaultSettings[i].ad_personalization ,
+      analytics_storage: consentDefault.defaultSettings[i].analytics_storage,
+      functionality_storage: consentDefault.defaultSettings[i].functionality_storage,
+      personalization_storage: consentDefault.defaultSettings[i].personalization_storage, 
+      security_storage: 'granted',
+    }; 
+    if (consentDefault.wait_for_update > 0) {
+      settingObject.wait_for_update = consentDefault.wait_for_update;
+    }
+    
+    if(data.defaultSettings[i].region !== ''){
+      settingObject.region = getRegionArr(data.defaultSettings[i].region);
+    }
+    setDefaultConsentState(settingObject);
+  }
+  }
+};
 const onUserConsent = (consents) => {
   let consent = consents.split(',');
   let ad_gcp = 'denied';
   let analytics_gcp = 'denied';
   let functionality_gcp = 'denied';
-  
+  let personalization_storage = 'denied';
   if(consent[0]){
    for(let i=0; i<consent.length; i++){
      if(consent[i]){
@@ -245,6 +280,7 @@ const onUserConsent = (consents) => {
              analytics_gcp = 'granted';
         }else{
             functionality_gcp = 'granted';
+            personalization_storage = 'granted';
         }
      }
    }
@@ -252,17 +288,27 @@ const onUserConsent = (consents) => {
     ad_gcp = 'denied';
     analytics_gcp = 'denied';
     functionality_gcp = 'denied';
+    personalization_storage = 'denied';
   }
-  
+ 
+  initDefault(data);
    const statusFromCMPState = {
      'ad_storage': ad_gcp,
      'ad_user_data': ad_gcp,
      'ad_personalization': ad_gcp,
      'analytics_storage': analytics_gcp,
      'functionality_storage': functionality_gcp,
-     'security_storage': 'granted'
+     'security_storage': 'granted',
+     'personalization_storage' : personalization_storage
   };
+
   updateConsentState(statusFromCMPState);
+     
+  gtagSet({
+      'url_passthrough': data.url_passthrough,
+      'ads_data_redaction': data.ads_data_redaction,
+      'developer_id.dY2FhYz': true
+    });
 };
 
 const main = (isWebview) => {
@@ -272,18 +318,12 @@ const main = (isWebview) => {
       if (localStore.length > 0) {
           onUserConsent(localStore);
         }else{
-              const settingObject = {
-                 ad_storage: data.defaultSettings && data.defaultSettings[0].ad_storage || 'denied',
-                 ad_user_data: data.defaultSettings && data.defaultSettings[0].ad_user_data || 'denied',
-                 ad_personalization: data.defaultSettings && data.defaultSettings[0].ad_personalization || 'denied',
-                 analytics_storage: data.defaultSettings && data.defaultSettings[0].analytics_storage || 'denied',
-                 functionality_storage: data.defaultSettings && data.defaultSettings[0].functionality_storage || 'denied',
-                 personalization_storage:data.defaultSettings && data.defaultSettings[0].personalization_storage || 'denied', 
-                 security_storage: 'granted',
-                 wait_for_update: data.wait_for_update
-              };
-          
-              updateConsentState(settingObject);
+          initDefault(data);
+          gtagSet({
+            'url_passthrough': data.url_passthrough,
+            'ads_data_redaction': data.ads_data_redaction,
+            'developer_id.dY2FhYz': true
+          });
         }
   }else{
     if(cookies.length > 0){
@@ -291,6 +331,7 @@ const main = (isWebview) => {
         if (settings) {
           onUserConsent(settings);
         }else{
+          initDefault(data);
            const settingObject = {
                  ad_storage: 'denied',
                  ad_user_data: 'denied',
@@ -298,28 +339,26 @@ const main = (isWebview) => {
                  analytics_storage: 'denied',
                  functionality_storage: 'denied',
                  personalization_storage: 'denied',
-                 security_storage: 'granted',
-                 wait_for_update: data.wait_for_update
+                 security_storage: 'granted'
               };
-          
-              updateConsentState(settingObject);
+          updateConsentState(settingObject);
+          gtagSet({
+            'url_passthrough': data.url_passthrough,
+            'ads_data_redaction': data.ads_data_redaction,
+            'developer_id.dY2FhYz': true
+          });
         }
     }else{
-        const settingObject = {
-                 ad_storage: data.defaultSettings && data.defaultSettings[0].ad_storage || 'denied',
-                 ad_user_data: data.defaultSettings && data.defaultSettings[0].ad_user_data || 'denied',
-                 ad_personalization: data.defaultSettings && data.defaultSettings[0].ad_personalization || 'denied',
-                 analytics_storage: data.defaultSettings && data.defaultSettings[0].analytics_storage || 'denied',
-                 functionality_storage: data.defaultSettings && data.defaultSettings[0].functionality_storage || 'denied',
-                 personalization_storage:data.defaultSettings && data.defaultSettings[0].personalization_storage || 'denied', 
-                 security_storage: 'granted',
-                 wait_for_update: data.wait_for_update
-              };
-      
-              setDefaultConsentState(settingObject);
+      initDefault(data);
+      gtagSet({
+        'url_passthrough': data.url_passthrough,
+        'ads_data_redaction': data.ads_data_redaction,
+        'developer_id.dY2FhYz': true
+      });
     }
   }
 };
+
 let checked = cookies; 
  if(checked.length > 0){
       main(false);
@@ -327,29 +366,14 @@ let checked = cookies;
    if(storage !== ''){ 
      main(true);
    }else{
-     if(data.defaultSettings && data.defaultSettings.length > 0 ){
-       for(let i=0; i<data.defaultSettings.length; i++){
-         
-          var settingObject = {
-                 ad_storage: data.defaultSettings[i].ad_storage,
-                 ad_user_data: data.defaultSettings[i].ad_user_data,
-                 ad_personalization: data.defaultSettings[i].ad_personalization ,
-                 analytics_storage: data.defaultSettings[i].analytics_storage,
-                 functionality_storage: data.defaultSettings[i].functionality_storage,
-                 personalization_storage: data.defaultSettings[i].personalization_storage, 
-                 security_storage: 'granted',
-                 wait_for_update: data.wait_for_update
-              }; 
-              if(data.defaultSettings[i].region){
-                 settingObject.region = data.defaultSettings[i].region;
-              }
-       }
-       setDefaultConsentState(settingObject);
-     }
-     
+       initDefault(data);
+       gtagSet({
+        'url_passthrough': !!data.url_passthrough,
+        'ads_data_redaction': !!data.ads_data_redaction,
+        'developer_id.dY2FhYz': true
+        });
    }
  }
-
 data.gtmOnSuccess();
 
 
@@ -747,6 +771,16 @@ ___WEB_PERMISSIONS___
       ]
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "write_data_layer",
+        "versionId": "1"
+      },
+      "param": []
+    },
+    "isRequired": true
   }
 ]
 
@@ -762,5 +796,3 @@ setup: ''
 ___NOTES___
 
 Created on 7/31/2023, 12:22:45 PM
-
-
