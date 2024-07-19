@@ -2,10 +2,10 @@ homepage: "https://www.cookieplus.com"
 documentation: "https://help.cookieplus.com"
 versions:
   - sha: 4573428dbfd6aef66601265b803d530de4fe9eca
-    changeNotes:  - Update the default state.
-                  - Fixed the default state for region.
-                  - Fixed the Pass through URL parameters.
-                  - Fixed the Redact Ads Data.
+    changeNotes:  Update the default state.
+                  Fixed the default state for region.
+                  Fixed the Pass through URL parameters.
+                  Fixed the Redact Ads Data.
   - sha: 0bca92fce61aa19b3e49d20fbb09869aa1810b78
     changeNotes: Update template.tpl
   - sha: 187c739d9b209bfe51b76d449aa424bfa55255fc
