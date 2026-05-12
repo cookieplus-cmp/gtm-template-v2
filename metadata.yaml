@@ -1,6 +1,10 @@
 homepage: "https://www.cookieplus.com"
 documentation: "https://help.cookieplus.com"
 versions:
+  # Latest version
+  - sha: 5e390baa54e2738f596a248ffaf274f6746f55dd
+    changeNotes: Fixed write_data_layer permission error
+  # Older versions
   - sha: 4573428dbfd6aef66601265b803d530de4fe9eca
     changeNotes:  Update the default state.
                   Fixed the default state for region.
